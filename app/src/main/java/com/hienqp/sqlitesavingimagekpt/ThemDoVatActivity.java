@@ -1,9 +1,13 @@
 package com.hienqp.sqlitesavingimagekpt;
 
+import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.core.app.ActivityCompat;
 
+import android.Manifest;
 import android.content.Intent;
+import android.content.pm.PackageManager;
 import android.graphics.Bitmap;
 import android.graphics.BitmapFactory;
 import android.graphics.drawable.BitmapDrawable;
@@ -26,8 +30,8 @@ public class ThemDoVatActivity extends AppCompatActivity {
     EditText edtTen, edtMota;
     ImageButton ibtnCamera, ibtnFolder;
     ImageView imgHinh;
-    private int REQUEST_CODE_CAMERA = 1;
-    private int REQUEST_CODE_FOLDER = 2;
+    private final int REQUEST_CODE_CAMERA = 1;
+    private final int REQUEST_CODE_FOLDER = 2;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -61,19 +65,73 @@ public class ThemDoVatActivity extends AppCompatActivity {
         ibtnCamera.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
-                startActivityForResult(intent, REQUEST_CODE_CAMERA);
+                /*
+                ĐOẠN CODE HỖ TRỢ ANDROID <= 5.0 API <= 22
+                 */
+//                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//                startActivityForResult(intent, REQUEST_CODE_CAMERA);
+
+                /*
+                ĐOẠN CODE HỖ TRỢ ANDROID >= 6.0 API >= 23
+                 */
+                ActivityCompat.requestPermissions(
+                        ThemDoVatActivity.this,
+                        new String[]{Manifest.permission.CAMERA},
+                        REQUEST_CODE_CAMERA
+                );
             }
         });
 
         ibtnFolder.setOnClickListener(new View.OnClickListener() {
             @Override
             public void onClick(View v) {
-                Intent intent = new Intent(Intent.ACTION_PICK);
-                intent.setType("image/*"); // tất cả kiểu dữ liệu là image
-                startActivityForResult(intent, REQUEST_CODE_FOLDER);
+                /*
+                ĐOẠN CODE HỖ TRỢ ANDROID <= 5.0 API <= 22
+                 */
+//                Intent intent = new Intent(Intent.ACTION_PICK);
+//                intent.setType("image/*"); // tất cả kiểu dữ liệu là image
+//                startActivityForResult(intent, REQUEST_CODE_FOLDER);
+
+                /*
+                ĐOẠN CODE HỖ TRỢ ANDROID >= 6.0 API >= 23
+                 */
+                ActivityCompat.requestPermissions(
+                        ThemDoVatActivity.this,
+                        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+                        REQUEST_CODE_FOLDER
+                );
             }
         });
+    }
+
+    /*
+    method onRequestPermissionsResult truyền vào 2 tham số cần quan tâm
+    - requestCode (dùng để switch() REQUEST CODE nào)
+    - grantResults (xác định có trả kết quả đồng ý từ người dùng)
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        switch (requestCode) {
+            case REQUEST_CODE_CAMERA:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    startActivityForResult(intent, REQUEST_CODE_CAMERA);
+                } else {
+                    Toast.makeText(this, "Bạn không cho phép sử dụng camera !!!", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            case REQUEST_CODE_FOLDER:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Intent intent = new Intent(Intent.ACTION_PICK);
+                    intent.setType("image/*");
+                    startActivityForResult(intent, REQUEST_CODE_FOLDER);
+                } else {
+                    Toast.makeText(this, "Bạn không cho phép sử dụng thư viện ảnh", Toast.LENGTH_SHORT).show();
+                } 
+                break;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
     }
 
     @Override

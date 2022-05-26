@@ -845,3 +845,119 @@ public class MainActivity extends AppCompatActivity {
 
 - Với các bước trên, ta đã thực hiện thêm và lấy hình ảnh ra từ SQLite.
 - SQLite có đặc tính chỉ lưu cục bộ, database mỗi thiết bị sẽ không giống nhau
+
+___
+
+- VẤN ĐỀ PERMISSION ĐỐI VỚI API 23 ANDROID >= 6.0
+- đối với các thiết bị có API 23 phiên bản Android >= 6.0, việc khởi động Camera hoặc Folder trực tiếp
+mà không hỏi Permission từ người dùng, thì sẽ xảy ra lỗi.
+- để ứng dụng khởi động Camera hoặc Folder không bị lỗi ta cần xin quyền Permission từ người dùng.
+- ta tiến hành chỉnh sửa 2 đoạn code tương tác với 2 button Camera và Folder trong ``ThemDoVatActivity.java``
+- trước khi sửa
+
+```java
+        ibtnCamera.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                startActivityForResult(intent, REQUEST_CODE_CAMERA);
+            }
+        });
+
+        ibtnFolder.setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                Intent intent = new Intent(Intent.ACTION_PICK);
+                intent.setType("image/*"); // tất cả kiểu dữ liệu là image
+                startActivityForResult(intent, REQUEST_CODE_FOLDER);
+            }
+        });
+```
+
+- sau khi sửa
+
+```java
+        ibtnCamera.setOnClickListener(new View.OnClickListener() {
+@Override
+public void onClick(View v) {
+                /*
+                ĐOẠN CODE HỖ TRỢ ANDROID <= 5.0 API <= 22
+                 */
+//                Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+//                startActivityForResult(intent, REQUEST_CODE_CAMERA);
+
+                /*
+                ĐOẠN CODE HỖ TRỢ ANDROID >= 6.0 API >= 23
+                 */
+        ActivityCompat.requestPermissions(
+        ThemDoVatActivity.this,
+        new String[]{Manifest.permission.CAMERA},
+        REQUEST_CODE_CAMERA
+        );
+        }
+        });
+
+        ibtnFolder.setOnClickListener(new View.OnClickListener() {
+@Override
+public void onClick(View v) {
+                /*
+                ĐOẠN CODE HỖ TRỢ ANDROID <= 5.0 API <= 22
+                 */
+//                Intent intent = new Intent(Intent.ACTION_PICK);
+//                intent.setType("image/*"); // tất cả kiểu dữ liệu là image
+//                startActivityForResult(intent, REQUEST_CODE_FOLDER);
+
+                /*
+                ĐOẠN CODE HỖ TRỢ ANDROID >= 6.0 API >= 23
+                 */
+        ActivityCompat.requestPermissions(
+        ThemDoVatActivity.this,
+        new String[]{Manifest.permission.READ_EXTERNAL_STORAGE},
+        REQUEST_CODE_FOLDER
+        );
+        }
+        });
+```
+
+- trong ``ThemDoVatActivity.java`` override method ``onRequestPermissionsResult()`` để xử lý việc người dùng
+cho phép sử dụng quyền yêu cầu.
+
+```java
+    /*
+    method onRequestPermissionsResult truyền vào 2 tham số cần quan tâm
+    - requestCode (dùng để switch() REQUEST CODE nào)
+    - grantResults (xác định có trả kết quả đồng ý từ người dùng)
+     */
+    @Override
+    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+
+        switch (requestCode) {
+            case REQUEST_CODE_CAMERA:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Intent intent = new Intent(MediaStore.ACTION_IMAGE_CAPTURE);
+                    startActivityForResult(intent, REQUEST_CODE_CAMERA);
+                } else {
+                    Toast.makeText(this, "Bạn không cho phép sử dụng camera !!!", Toast.LENGTH_SHORT).show();
+                }
+                break;
+            case REQUEST_CODE_FOLDER:
+                if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                    Intent intent = new Intent(Intent.ACTION_PICK);
+                    intent.setType("image/*");
+                    startActivityForResult(intent, REQUEST_CODE_FOLDER);
+                } else {
+                    Toast.makeText(this, "Bạn không cho phép sử dụng thư viện ảnh", Toast.LENGTH_SHORT).show();
+                } 
+                break;
+        }
+        super.onRequestPermissionsResult(requestCode, permissions, grantResults);
+    }
+```
+
+- đồng thời trong file ``AndroidManifest.xml`` ta thêm 2 dòng hỏi uses-permission cho CAMERA và FOLDER
+
+```xml
+    <uses-permission android:name="android.permission.CAMERA"/>
+    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
+```
+
